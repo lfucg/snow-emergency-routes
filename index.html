@@ -1,0 +1,143 @@
+<html>
+<head>
+  
+    <title>LFUCG Snow Removal</title>
+  
+    <meta charset=utf-8 />
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+
+    <!-- Load Leaflet from CDN-->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.0.1/dist/leaflet-src.js"></script>
+
+    <!-- Load Esri Leaflet from CDN -->
+    <script src="https://unpkg.com/esri-leaflet@2.0.4"></script>
+  
+    <style>
+        body { margin:0; padding:0; }
+        #map { position: absolute; top:0; bottom:0; right:0; left:0; }
+    </style>
+  
+</head>
+<body>
+
+<div id="map"></div>   
+
+//search  
+<link rel="stylesheet" href="https://unpkg.com/esri-leaflet-geocoder@2.1.4/dist/esri-leaflet-geocoder.css">
+<script src="https://unpkg.com/esri-leaflet-geocoder@2.1.4"></script>
+
+//home button
+<link href="http://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet-easybutton@2.0.0/src/easy-button.css">
+<script src="https://unpkg.com/leaflet-easybutton@2.0.0/src/easy-button.js"></script>
+  
+<script>
+    //create variable for bounding coordinates of fayette county envelope
+    var southWest = L.latLng(37.844628, -84.659246),
+        northEast = L.latLng(38.211523, -84.28272),
+        bounds = L.latLngBounds(southWest, northEast);  
+
+    //set up map and add data
+    var map = new L.map("map",{
+        zoomControl: false, 
+        //scrollWheelZoom: false
+    });
+
+    map.fitBounds(bounds);  
+  
+    L.esri.basemapLayer("Gray").addTo(map);
+  
+    var localGrayBase = L.esri.tiledMapLayer({
+        url: 'http://maps.lexingtonky.gov/lfucggis/rest/services/basemap_grayscale/MapServer',
+    }).addTo(map)
+
+    var snowEmergencyMs = L.esri.tiledMapLayer({
+        url: 'https://maps.lexingtonky.gov/lfucggis/rest/services/snowemergencyroute/MapServer',
+        opacity: 0.6
+    })
+    .addTo(map);
+  
+    var overlayMs = L.esri.dynamicMapLayer({
+        url: "https://maps.lexingtonky.gov/lfucggis/rest/services/overlay/MapServer",
+        opacity: 0.5
+    }).addTo(map);
+  
+    var labelsMs = L.esri.tiledMapLayer({
+        url: "https://maps.lexingtonky.gov/lfucggis/rest/services/labels_test/MapServer",
+     opacity: 0.9
+    }).addTo(map);
+   
+    //create search control with results from county envelope
+    var searchControl = L.esri.Geocoding.geosearch({
+        position: 'topright',
+        expanded: true,
+        searchBounds: bounds,
+        providers: [
+            L.esri.Geocoding.arcgisOnlineProvider({
+                categories: ['Address', 'Populated Place','POI' ]
+            })
+        ]
+    }).addTo(map);
+  
+    // create snow removal popup
+    var results = L.layerGroup().addTo(map);
+
+    map.on('click', function (e) {
+        displayStatus(e.latlng);
+    });
+
+    var displaySearchResults = function(data, latlng) {
+        displayStatus(data.results[0].latlng);
+    }
+
+    var displayStatus = function(latlng) {
+        results.clearLayers();
+
+        snowEmergencyMs.identify()
+            .returnGeometry(false)
+            //.tolerance(0)
+            .on(map)
+            .at(latlng)
+            .run(function(error, featureCollection) {
+                var roadname;
+                $.each(featureCollection.features, function(index, feature) {
+                    if (feature.layerId === 18) { roadname = feature.properties['ANNO']; }
+                });
+                showRoadnamePopup(map, latlng, roadname);
+            });
+        }
+
+    var showRoadnamePopup = function(map, addressLatLng, roadname) {
+        if (!roadname || roadname === 'Null') {
+            return false;
+        } else {
+            var roadLanguage = '<h3>' + roadname + '</h3>';
+            roadname = roadLanguage
+        }
+        var popup = L.popup({
+            closeButton: true,
+            })
+            .setLatLng(addressLatLng)
+            .setContent(roadname)
+            .openOn(map);
+     
+        map.setView(addressLatLng);
+        setTimeout(function() {
+            map.panBy(new L.Point(0, -100));
+        }, 500);
+    };
+  
+    // make a bar with navigation buttons
+        var zoomBar = L.easyBar([
+            L.easyButton( '<big>+</big>',  function(control, map){map.setZoom(map.getZoom()+1);}),
+            L.easyButton( 'fa-home fa-lg', function(control, map){map.fitBounds(bounds);}),
+            L.easyButton( '<big>-</big>',  function(control, map){map.setZoom(map.getZoom()-1);}),
+        ]);
+
+    zoomBar.addTo(map);
+</script>
+
+</body>
+</html>
+LICENSE
