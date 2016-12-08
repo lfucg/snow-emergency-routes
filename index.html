@@ -32,6 +32,12 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet-easybutton@2.0.0/src/easy-button.css">
 <script src="https://unpkg.com/leaflet-easybutton@2.0.0/src/easy-button.js"></script>
   
+//popup
+  <script
+    src="https://code.jquery.com/jquery-1.12.4.min.js"
+    integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ="
+    crossorigin="anonymous"></script>
+  
 <script>
     //create variable for bounding coordinates of fayette county envelope
     var southWest = L.latLng(37.844628, -84.659246),
@@ -102,7 +108,7 @@
             .run(function(error, featureCollection) {
                 var roadname;
                 $.each(featureCollection.features, function(index, feature) {
-                    if (feature.layerId === 18) { roadname = feature.properties['ANNO']; }
+                    if (feature.layerId === 18) { roadname = feature.properties['ROADNAME']; }
                 });
                 showRoadnamePopup(map, latlng, roadname);
             });
